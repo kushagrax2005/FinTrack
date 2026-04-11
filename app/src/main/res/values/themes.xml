@@ -1,11 +1,16 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.FinTrack" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary_dark</item>
+    <style name="Theme.FinTrack" parent="Theme.MaterialComponents.Light.DarkActionBar">
+        <item name="colorPrimary">#6C63FF</item>
+        <item name="colorPrimaryVariant">#4B44D4</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/accent</item>
-        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="colorSecondary">#FF6584</item>
+        <item name="android:statusBarColor">#6C63FF</item>
+    </style>
+
+    <style name="Theme.FinTrack.NoActionBar" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#6C63FF</item>
+        <item name="android:statusBarColor">#6C63FF</item>
     </style>
 
 </resources>

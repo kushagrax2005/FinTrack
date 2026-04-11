@@ -50,18 +50,22 @@ class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = 
             val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
             txtDate.text = sdf.format(Date(transaction.date))
             
-            val category = transaction.category
+            val category = transaction.category.lowercase()
             txtIcon.text = when {
-                category.contains("Food") -> "🍕"
-                category.contains("Shop") -> "🛍️"
-                category.contains("Travel") -> "🚗"
-                category.contains("Bills") -> "📄"
-                category.contains("Grocer") -> "🛒"
-                category.contains("Entertain") -> "🎬"
-                category.contains("Health") -> "💊"
-                category.contains("Invest") -> "📈"
-                category.contains("Salary") -> "💰"
-                category.contains("Self") -> "🔄"
+                category.contains("food") || category.contains("🍔") || category.contains("🍕") -> "🍕"
+                category.contains("shop") || category.contains("🛍") -> "🛍️"
+                category.contains("travel") || category.contains("🚗") -> "🚗"
+                category.contains("transport") -> "🚗"
+                category.contains("bill") || category.contains("🧾") || category.contains("📄") -> "📄"
+                category.contains("utility") -> "📄"
+                category.contains("grocer") || category.contains("🛒") -> "🛒"
+                category.contains("blinkit") || category.contains("zepto") -> "🛒"
+                category.contains("entertain") || category.contains("🎬") || category.contains("🍿") -> "🎬"
+                category.contains("health") || category.contains("💊") || category.contains("wellness") -> "💊"
+                category.contains("invest") || category.contains("📈") || category.contains("saving") -> "📈"
+                category.contains("salary") || category.contains("💰") || category.contains("income") -> "💰"
+                category.contains("self") || category.contains("🔄") || category.contains("transfer") -> "🔄"
+                category.contains("cash") || category.contains("💵") -> "💵"
                 else -> "📦"
             }
         }

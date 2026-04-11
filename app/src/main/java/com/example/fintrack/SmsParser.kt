@@ -143,7 +143,7 @@ object SmsParser {
         val knownMerchants = listOf(
             "zomato", "swiggy", "amazon", "flipkart", "airtel", "jio", "uber", "ola", 
             "paytm", "phonepe", "gpay", "netflix", "spotify", "bigbasket", "blinkit", 
-            "zepto", "zudio", "dmart", "jiomart", "hotstar", "bookmyshow", "pvr", "myntra", "meesho"
+            "zepto", "zudio", "dmart", "jiomart", "hotstar", "bookmyshow", "pvr", "myntra", "meesho", "lic"
         )
         for (m in knownMerchants) {
             if (lower.contains(m)) return m.replaceFirstChar { it.uppercase() }
@@ -153,7 +153,10 @@ object SmsParser {
             Pattern.compile("(?i)paid\\s+(?:Rs\\.?|inr|₹)?\\s*[\\d.,]+\\s+to\\s+([^\\s,]+(?:\\s+[^\\s,]+)?)"),
             Pattern.compile("(?i)spent\\s+(?:Rs\\.?|inr|₹)?\\s*[\\d.,]+\\s+at\\s+([^\\s,]+(?:\\s+[^\\s,]+)?)"),
             Pattern.compile("(?i)towards\\s+([^\\s,]+(?:\\s+[^\\s,]+)?)"),
-            Pattern.compile("(?i)at\\s+([^\\s,]{3,}(?:\\s+[^\\s,]+)?)")
+            Pattern.compile("(?i)for\\s+([^\\s,]{3,}(?:\\s+[^\\s,]+)?)"),
+            Pattern.compile("(?i)at\\s+([^\\s,]{3,}(?:\\s+[^\\s,]+)?)"),
+            Pattern.compile("(?i)vpa\\s+([^\\s,]+(?:\\s+[^\\s,]+)?)"),
+            Pattern.compile("(?i)info[:\\-\\s]+([^\\s,]+(?:\\s+[^\\s,]+)?)")
         )
 
         for (pattern in patterns) {
@@ -169,6 +172,13 @@ object SmsParser {
                 }
             }
         }
+
+        // Final fallback: Look for Bank Name if nothing else found
+        val banks = listOf("Kotak", "HDFC", "ICICI", "SBI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDBI", "YES", "HSBC", "CITI")
+        for (bank in banks) {
+            if (lower.contains(bank.lowercase())) return bank
+        }
+
         return "Merchant"
     }
 

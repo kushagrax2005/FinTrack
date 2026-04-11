@@ -31,15 +31,22 @@ class SmsReceiver : BroadcastReceiver() {
                         val repository = TransactionRepository(db.transactionDao())
                         
                         CoroutineScope(Dispatchers.IO).launch {
-                            repository.insert(TransactionEntity(
+                            val entity = TransactionEntity(
                                 amount = transaction.amount,
                                 merchant = transaction.merchant,
                                 category = transaction.category,
                                 date = transaction.date,
                                 body = transaction.body,
                                 isDebit = transaction.isDebit
-                            ))
-                            NotificationHelper.showNotification(context, transaction.amount, transaction.merchant)
+                            )
+                            
+                            // 🛑 PREVENT DUPLICATE ENTRIES: Check if same amount and merchant exists within 15 mins
+                            if (!repository.isDuplicate(entity.amount, entity.merchant, entity.date)) {
+                                repository.insert(entity)
+                                NotificationHelper.showNotification(context, transaction.amount, transaction.merchant)
+                            } else {
+                                Log.d("SmsReceiver", "Skipping duplicate transaction: ${entity.amount} at ${entity.merchant}")
+                            }
                         }
                     }
                 }

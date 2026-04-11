@@ -48,14 +48,28 @@ class AiAnalyzer {
         }
     }
 
-    suspend fun searchTransactions(query: String, allTransactions: List<TransactionEntity>): List<TransactionEntity> = withContext(Dispatchers.IO) {
+    suspend fun searchTransactions(query: String, allTransactions: List<TransactionEntity>): List<TransactionEntity> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // 1. First attempt: Precise Keyword Filtering (Fast & Reliable)
+        val keywords = query.lowercase().split(" ")
+        val keywordMatches = allTransactions.filter { t ->
+            val text = (t.merchant + " " + t.category + " " + t.body).lowercase()
+            keywords.all { text.contains(it) }
+        }
+        
+        if (keywordMatches.isNotEmpty() && query.length < 20) {
+            return@withContext keywordMatches
+        }
+
+        // 2. Second attempt: AI Semantic Search (For complex queries like "Food under 500")
         val prompt = """
             User Query: "$query"
+            Context: The user wants to filter their transactions.
             Available Categories: [Food & Dining, Shopping, Travel & Transport, Bills & Utilities, Groceries, Entertainment, Health & Wellness, Investment & Savings, Salary & Income, Self Transfer, Others]
             
-            Task: Translate the user's natural language search query into a JSON filter object.
+            Task: Extract filter criteria from the query. Return ONLY a JSON object.
+            Example: "Zomato spends over 500" -> {"merchant": "Zomato", "minAmount": 500}
             
-            Response Format (Strict JSON):
+            Response Format:
             {
               "category": "category_name_or_null",
               "merchant": "merchant_name_or_null",
@@ -67,24 +81,26 @@ class AiAnalyzer {
 
         try {
             val response = model.generateContent(prompt)
-            val jsonStr = response.text?.trim()?.removeSurrounding("```json", "```")?.trim() ?: return@withContext emptyList()
+            val jsonStr = response.text?.trim()?.removePrefix("```json")?.removeSuffix("```")?.trim() ?: return@withContext keywordMatches
             
-            val merchant = Regex("\"merchant\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" }
-            val category = Regex("\"category\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" }
-            val type = Regex("\"type\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" }
-            val minAmount = Regex("\"minAmount\":\\s*([\\d.]+)").find(jsonStr)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
-            val maxAmount = Regex("\"maxAmount\":\\s*([\\d.]+)").find(jsonStr)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+            val merchantStr = Regex("\"merchant\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" && it.isNotBlank() }
+            val categoryStr = Regex("\"category\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" && it.isNotBlank() }
+            val typeStr = Regex("\"type\":\\s*\"(.*?)\"").find(jsonStr)?.groupValues?.get(1)?.takeIf { it != "null" && it.isNotBlank() }
+            val minAmt = Regex("\"minAmount\":\\s*([\\d.]+)").find(jsonStr)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
+            val maxAmt = Regex("\"maxAmount\":\\s*([\\d.]+)").find(jsonStr)?.groupValues?.get(1)?.toDoubleOrNull() ?: 0.0
 
-            allTransactions.filter { t ->
-                val merchantMatch = merchant == null || t.merchant.contains(merchant, ignoreCase = true)
-                val categoryMatch = category == null || t.category.equals(category, ignoreCase = true)
-                val typeMatch = type == null || (if (type == "DEBIT") t.isDebit else !t.isDebit)
-                val amountMatch = (minAmount == 0.0 || t.amount >= minAmount) && (maxAmount == 0.0 || t.amount <= maxAmount)
+            val filtered = allTransactions.filter { t ->
+                val merchantMatch = merchantStr == null || t.merchant.contains(merchantStr, ignoreCase = true)
+                val categoryMatch = categoryStr == null || t.category.equals(categoryStr, ignoreCase = true)
+                val typeMatch = typeStr == null || (if (typeStr == "DEBIT") t.isDebit else !t.isDebit)
+                val amountMatch = (minAmt == 0.0 || t.amount >= minAmt) && (maxAmt == 0.0 || t.amount <= maxAmt)
                 
                 merchantMatch && categoryMatch && typeMatch && amountMatch
             }
+            
+            if (filtered.isEmpty()) keywordMatches else filtered
         } catch (e: Exception) {
-            emptyList()
+            keywordMatches
         }
     }
 
@@ -95,9 +111,12 @@ class AiAnalyzer {
             Analyze these SMS messages and extract transaction details.
             Return ONLY a JSON array of objects with schema: [{"isTransaction":bool,"type":"DEBIT"|"CREDIT","amount":num,"merchant":"str","category":"str"}]
             
-            Guidelines:
-            - Categories: Food & Dining, Shopping, Travel & Transport, Bills & Utilities, Groceries, Entertainment, Health & Wellness, Investment & Savings, Salary & Income, Self Transfer, Others.
-            - If merchant is not explicitly mentioned, infer from context or use the Category name as the merchant. Never return "Unknown" if you can avoid it.
+            Strict Guidelines:
+            1. MERCHANT: Extract the actual business name (e.g., Zomato, Uber, Amazon, LIC). 
+               - If it's a bank alert (e.g., "Kotak Bank spent"), but another message or context suggests a merchant, use the merchant.
+               - If no merchant is found, use the Bank Name (e.g., "Kotak Bank") or Category name. NEVER return "Unknown".
+            2. CATEGORY: Map to exactly one of: [Food & Dining, Shopping, Travel & Transport, Bills & Utilities, Groceries, Entertainment, Health & Wellness, Investment & Savings, Salary & Income, Self Transfer, Others].
+            3. IS_TRANSACTION: Set to false for OTPs, balance inquiries, or failed attempts.
             
             Messages:
             ${smsMessages.mapIndexed { i, msg -> "$i: $msg" }.joinToString("\n")}
@@ -187,13 +206,14 @@ class AiAnalyzer {
         
         // Pattern 1: Delimiter-based (Most accurate for standard bank SMS)
         val structuredPatterns = listOf(
-            Regex("paid to (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("spent at (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("at (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("towards (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("info:\\s*(.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("VPA\\s+(.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|$)", RegexOption.IGNORE_CASE),
-            Regex("Ref\\s+\\d+\\s+to\\s+(.*?)(?:\\s+on|\\s+at|$)", RegexOption.IGNORE_CASE)
+            Regex("paid to (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("spent at (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("at (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("towards (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("for (.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("info:\\s*(.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("VPA\\s+(.*?)(?:\\s+on|\\s+using|\\s+ref|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE),
+            Regex("Ref\\s+\\d+\\s+to\\s+(.*?)(?:\\s+on|\\s+at|\\s+for|$)", RegexOption.IGNORE_CASE)
         )
 
         for (pattern in structuredPatterns) {
@@ -262,14 +282,21 @@ class AiAnalyzer {
         // Fallback for merchant: if unknown, use category or find a name
         if (merchant == "Unknown" || merchant.length < 2 || merchant.all { it.isDigit() }) {
             val words = smsBody.split(Regex("[\\s/\\-,]")).filter { it.length > 2 }
-            val commonBankWords = setOf("RS", "INR", "AMT", "VPA", "REF", "A/C", "AC", "DEBITED", "CREDITED", "SMS", "BANK", "INFO", "PAYMENT", "PAID", "SENT", "SPENT", "FOR")
+            val commonBankWords = setOf(
+                "RS", "INR", "AMT", "VPA", "REF", "A/C", "AC", "DEBITED", "CREDITED", "SMS", "BANK", "INFO", "PAYMENT", "PAID", "SENT", "SPENT", "FOR",
+                "HDFC", "ICICI", "KOTAK", "SBI", "AXIS", "PNB", "BOB", "CANARA", "UNION", "IDBI", "YES", "HSBC", "CITI", "SCB"
+            )
+            
+            // Try to find a capitalized word that isn't a common bank word
             val candidate = words.firstOrNull { word -> 
                 word.all { it.isUpperCase() } && !commonBankWords.contains(word.uppercase()) 
             } ?: words.firstOrNull { word ->
-                word[0].isUpperCase() && !commonBankWords.contains(word.uppercase()) && !commonBankWords.contains(word.uppercase())
+                word[0].isUpperCase() && !commonBankWords.contains(word.uppercase())
+            } ?: words.firstOrNull { word ->
+                commonBankWords.contains(word.uppercase()) && word.length > 3
             }
             
-            merchant = candidate ?: if (category != "Others") category else "Transaction"
+            merchant = candidate?.trim()?.removeSuffix(".")?.removeSuffix(",") ?: if (category != "Others") category else "Transaction"
         }
 
         return AiTransaction(true, if (isCredit && !isDebit) "CREDIT" else "DEBIT", amount, merchant.trim(), category)
@@ -281,50 +308,88 @@ class AiAnalyzer {
 
     fun analyzeLocally(transactions: List<TransactionEntity>, monthlyBudget: Double): List<Insight> {
         val insights = mutableListOf<Insight>()
-        val debits = transactions.filter { it.isDebit }
-        if (debits.isEmpty()) return insights
-
-        val totalSpent = debits.sumOf { it.amount }
-        val categoryTotals = debits.groupBy { it.category }.mapValues { it.value.sumOf { t -> t.amount } }
-        
         val now = Calendar.getInstance()
-        val currentDay = now.get(Calendar.DAY_OF_MONTH).coerceAtLeast(1)
-        val totalDays = now.getActualMaximum(Calendar.DAY_OF_MONTH).coerceAtLeast(30)
-        
-        val dailyAvg = totalSpent / currentDay
-        val projected = dailyAvg * totalDays
-        if (projected > monthlyBudget) {
-            val overBy = projected - monthlyBudget
-            insights.add(Insight("Burn Rate Alert", "At this pace, you'll exceed your budget by ₹${overBy.toInt()}. Consider cutting back on non-essentials.", "High"))
-        } else {
-            insights.add(Insight("Budget On Track", "You are spending ₹${dailyAvg.toInt()} per day. Keep it up to stay under ₹${monthlyBudget.toInt()}.", "Low"))
-        }
+        val currentMonth = now.get(Calendar.MONTH)
+        val currentYear = now.get(Calendar.YEAR)
 
-        val smallSpends = debits.filter { it.amount in 10.0..300.0 }
-        if (smallSpends.size >= 5) {
-            val smallTotal = smallSpends.sumOf { it.amount }
-            insights.add(Insight("Latte Factor", "You had ${smallSpends.size} small purchases totaling ₹${smallTotal.toInt()}. These 'micro-spends' add up fast!", "Medium"))
-        }
-
-        val topCategory = categoryTotals.maxByOrNull { it.value }
-        if (topCategory != null && topCategory.value > totalSpent * 0.5) {
-            insights.add(Insight("Spending Heavy", "Over 50% of your budget is going to ${topCategory.key}. Is there room to optimize here?", "Medium"))
-        }
-
-        val weekendSpend = debits.filter {
+        // Filter transactions for the current month for "Current Month" specific insights
+        val currentMonthTransactions = transactions.filter {
             val cal = Calendar.getInstance().apply { timeInMillis = it.date }
-            val day = cal.get(Calendar.DAY_OF_WEEK)
-            day == Calendar.SATURDAY || day == Calendar.SUNDAY
-        }.sumOf { it.amount }
-        if (weekendSpend > totalSpent * 0.4) {
-            insights.add(Insight("Weekend Peak", "Your weekend spending is high (₹${weekendSpend.toInt()}). Try a 'No-Spend' Sunday next week.", "Medium"))
+            cal.get(Calendar.MONTH) == currentMonth && cal.get(Calendar.YEAR) == currentYear
         }
 
-        return insights.shuffled().take(3)
+        val debits = currentMonthTransactions.filter { it.isDebit }
+        
+        if (debits.isNotEmpty()) {
+            val totalSpent = debits.sumOf { it.amount }
+            val currentDay = now.get(Calendar.DAY_OF_MONTH).coerceAtLeast(1)
+            val totalDays = now.getActualMaximum(Calendar.DAY_OF_MONTH).coerceAtLeast(30)
+            
+            val dailyAvg = totalSpent / currentDay
+            val projected = dailyAvg * totalDays
+            
+            if (projected > monthlyBudget) {
+                val overBy = projected - monthlyBudget
+                insights.add(Insight("Burn Rate Alert", "At this pace, you'll exceed your budget by ₹${overBy.toInt()}. Consider cutting back on non-essentials.", "High"))
+            } else {
+                insights.add(Insight("Budget On Track", "You are spending ₹${dailyAvg.toInt()} per day. Keep it up to stay under ₹${monthlyBudget.toInt()}.", "Low"))
+            }
+
+            // Category specific insights
+            val categoryTotals = debits.groupBy { it.category }.mapValues { it.value.sumOf { t -> t.amount } }
+            val topCategory = categoryTotals.maxByOrNull { it.value }
+            if (topCategory != null && topCategory.value > totalSpent * 0.4) {
+                insights.add(Insight("${topCategory.key} Heavy", "You've spent ₹${topCategory.value.toInt()} on ${topCategory.key} this month. This is ${((topCategory.value/totalSpent)*100).toInt()}% of your total spend.", "Medium"))
+            }
+        }
+
+        // Global/Diversity insights (using more data)
+        val allDebits = transactions.filter { it.isDebit }
+        if (allDebits.isNotEmpty()) {
+            // Subscription/Recurring detection
+            val recurring = allDebits.groupBy { it.merchant }
+                .filter { it.value.size >= 2 }
+                .maxByOrNull { it.value.size }
+            if (recurring != null) {
+                insights.add(Insight("Recurring Expense", "You've visited ${recurring.key} ${recurring.value.size} times recently. Consider a subscription if available to save money.", "Low"))
+            }
+
+            // Weekend vs Weekday
+            val weekendSpend = allDebits.filter {
+                val cal = Calendar.getInstance().apply { timeInMillis = it.date }
+                val day = cal.get(Calendar.DAY_OF_WEEK)
+                day == Calendar.SATURDAY || day == Calendar.SUNDAY
+            }.sumOf { it.amount }
+            val totalAllSpent = allDebits.sumOf { it.amount }
+            if (totalAllSpent > 0 && weekendSpend > totalAllSpent * 0.4) {
+                insights.add(Insight("Weekend Spender", "₹${weekendSpend.toInt()} was spent on weekends. Planning your leisure activities might help reduce this.", "Medium"))
+            }
+
+            // Large Transactions
+            val largeTxn = allDebits.maxByOrNull { it.amount }
+            if (largeTxn != null && largeTxn.amount > 2000) {
+                insights.add(Insight("Big Purchase", "Your largest spend was ₹${largeTxn.amount.toInt()} at ${largeTxn.merchant}. Does this happen often?", "Medium"))
+            }
+
+            // Small leaks
+            val smallSpends = allDebits.filter { it.amount in 10.0..200.0 }
+            if (smallSpends.size >= 8) {
+                insights.add(Insight("Micro-Spending", "You have ${smallSpends.size} small transactions. These often go unnoticed but impact your savings.", "Low"))
+            }
+        }
+
+        return insights.shuffled()
     }
 
     private fun buildPrompt(transactions: List<TransactionEntity>, monthlyBudget: Double): String {
-        val debits = transactions.filter { it.isDebit }.sortedByDescending { it.date }
+        val now = Calendar.getInstance()
+        val currentMonth = now.get(Calendar.MONTH)
+        val currentMonthTransactions = transactions.filter {
+            val cal = Calendar.getInstance().apply { timeInMillis = it.date }
+            cal.get(Calendar.MONTH) == currentMonth
+        }
+        
+        val debits = currentMonthTransactions.filter { it.isDebit }.sortedByDescending { it.date }
         val totalSpent = debits.sumOf { it.amount }
         
         val categoryData = debits.groupBy { it.category }
@@ -332,25 +397,22 @@ class AiAnalyzer {
             .entries.sortedByDescending { it.value }
             .joinToString { "${it.key}: ₹${it.value.toInt()}" }
         
-        val merchantData = debits.groupBy { it.merchant }
-            .mapValues { it.value.sumOf { t -> t.amount } }
-            .toList().sortedByDescending { it.second }.take(5)
-            .joinToString { "${it.first} (₹${it.second.toInt()})" }
-
-        val now = Calendar.getInstance()
         val day = now.get(Calendar.DAY_OF_MONTH)
-        val dailyAvg = if (day > 0) totalSpent / day else 0.0
 
         return """
-            You are "FinTrack AI", a world-class wealth coach. 
-            User Context:
-            - Monthly Budget: ₹$monthlyBudget
-            - Current Spending: ₹$totalSpent ($day days elapsed)
-            - Daily Average: ₹${dailyAvg.toInt()}
-            - Category Breakdown: $categoryData
-            - Top Merchants: $merchantData
+            You are "FinTrack AI", a financial coach.
+            Context for CURRENT MONTH:
+            - Budget: ₹$monthlyBudget, Spent: ₹$totalSpent (Day $day)
+            - Categories: $categoryData
+            
+            Task: Provide 5 DIVERSE and ACTIONABLE insights. 
+            Include: 
+            1. Current month projection (if spending is high).
+            2. Comparison with previous patterns (if data suggests).
+            3. Identification of "leakage" (small frequent spends).
+            4. Encouragement for good habits.
+            5. A "Fun Fact" about their spending.
 
-            Task: Provide 3 HYPER-SPECIFIC insights. 
             Format:
             TITLE: [3-5 words]
             MESSAGE: [1-2 sentences]

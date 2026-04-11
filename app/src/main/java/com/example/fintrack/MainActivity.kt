@@ -69,7 +69,17 @@ class MainActivity : AppCompatActivity() {
 
         // Load Prefs
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        monthlyBudget = prefs.getFloat("budget", 20000f).toDouble()
+        val registeredIncome = prefs.getFloat("monthly_income", 0f).toDouble()
+        
+        // If income was set during registration and no manual budget is set, use it as budget
+        monthlyBudget = if (registeredIncome > 0 && !prefs.contains("budget")) {
+            registeredIncome
+        } else {
+            prefs.getFloat("budget", 20000f).toDouble()
+        }
+
+        val userName = prefs.getString("user_name", "User")
+        Toast.makeText(this, "Welcome back, $userName!", Toast.LENGTH_SHORT).show()
 
         // Initialize UI
         totalText = findViewById(R.id.txtTotal)
@@ -329,14 +339,20 @@ class MainActivity : AppCompatActivity() {
                         
                         if (aiResult.isTransaction) {
                             val msg = batch[index]
-                            transactions.add(TransactionEntity(
+                            val entity = TransactionEntity(
                                 amount = aiResult.amount,
                                 merchant = aiResult.merchant,
                                 category = aiResult.category,
                                 date = msg.date,
                                 body = msg.body,
                                 isDebit = aiResult.type == "DEBIT"
-                            ))
+                            )
+                            
+                            // 🛑 De-duplicate during history sync (especially useful if multiple banks report same spent amount)
+                            val isDup = transactions.any { it.amount == entity.amount && it.isDebit == entity.isDebit && Math.abs(it.date - entity.date) < 300_000 }
+                            if (!isDup) {
+                                transactions.add(entity)
+                            }
                         }
                     }
                     
