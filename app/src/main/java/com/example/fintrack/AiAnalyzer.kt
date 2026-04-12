@@ -15,13 +15,13 @@ class AiAnalyzer {
         modelName = "gemini-1.5-flash",
         apiKey = apiKey,
         generationConfig = generationConfig {
-            responseMimeType = "application/json"
+            responseMimeType = "text/plain" // Changing back to plain text for easier multi-line parsing
         }
     )
 
     data class Insight(
         val title: String,
-        val message: String,
+        val description: String,
         val impact: String // "High", "Medium", "Low"
     )
 
@@ -306,7 +306,7 @@ class AiAnalyzer {
         return keywords.any { text.contains(it, ignoreCase = true) }
     }
 
-    fun analyzeLocally(transactions: List<TransactionEntity>, monthlyBudget: Double): List<Insight> {
+    fun analyze(transactions: List<TransactionEntity>, monthlyBudget: Double): List<Insight> {
         val insights = mutableListOf<Insight>()
         val now = Calendar.getInstance()
         val currentMonth = now.get(Calendar.MONTH)
@@ -436,6 +436,7 @@ class AiAnalyzer {
                 when {
                     line.startsWith("TITLE:", ignoreCase = true) -> title = line.substringAfter(":").trim()
                     line.startsWith("MESSAGE:", ignoreCase = true) -> message = line.substringAfter(":").trim()
+                    line.startsWith("DESCRIPTION:", ignoreCase = true) -> message = line.substringAfter(":").trim()
                     line.startsWith("IMPACT:", ignoreCase = true) -> impact = line.substringAfter(":").trim()
                 }
             }
@@ -446,4 +447,6 @@ class AiAnalyzer {
         }
         return insights.take(3)
     }
+
+    private fun analyzeLocally(transactions: List<TransactionEntity>, monthlyBudget: Double): List<Insight> = analyze(transactions, monthlyBudget)
 }

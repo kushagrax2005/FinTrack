@@ -125,13 +125,44 @@ object SmsParser {
     private fun determineCategory(body: String): String {
         val lower = body.lowercase()
         return when {
+            lower.contains("zomato") || lower.contains("swiggy") || lower.contains("food") || lower.contains("eat") || 
+            lower.contains("restaurant") || lower.contains("bakery") || lower.contains("dine") || lower.contains("cafe") ||
+            lower.contains("kfc") || lower.contains("starbucks") || lower.contains("mcdonald") -> "Food & Dining 🍔"
+            
+            lower.contains("amazon") || lower.contains("flipkart") || lower.contains("shop") || lower.contains("myntra") || 
+            lower.contains("meesho") || lower.contains("ajio") || lower.contains("nykaa") || lower.contains("zudio") || 
+            lower.contains("lifestyle") -> "Shopping 🛍"
+            
+            lower.contains("recharge") || lower.contains("airtel") || lower.contains("jio") || lower.contains("bill") || 
+            lower.contains("electricity") || lower.contains("vi ") || lower.contains("broadband") || lower.contains("bescom") || 
+            lower.contains("gas") || lower.contains("water") || lower.contains("insurance") || lower.contains("lic") -> "Bills & Utilities 🧾"
+            
+            lower.contains("uber") || lower.contains("ola") || lower.contains("metro") || lower.contains("travel") || 
+            lower.contains("rapido") || lower.contains("train") || lower.contains("irctc") || lower.contains("bus") || 
+            lower.contains("petrol") || lower.contains("fuel") || lower.contains("shell") -> "Travel & Transport 🚗"
+            
+            lower.contains("netflix") || lower.contains("spotify") || lower.contains("movie") || lower.contains("pvr") || 
+            lower.contains("hotstar") || lower.contains("theatre") || lower.contains("entertainment") || lower.contains("bookmyshow") -> "Entertainment 🍿"
+            
+            lower.contains("mutual fund") || lower.contains("sip") || lower.contains("zerodha") || lower.contains("groww") || 
+            lower.contains("upstox") || lower.contains("angel") || lower.contains("stock") || lower.contains("investment") || 
+            lower.contains("fixed deposit") || lower.contains("recurring deposit") || lower.contains("gold") || 
+            lower.contains("indmoney") || lower.contains("coin") -> "Investment & Savings 📈"
+            
+            lower.contains("blinkit") || lower.contains("zepto") || lower.contains("bigbasket") || lower.contains("instamart") || 
+            lower.contains("grocery") || lower.contains("supermarket") || lower.contains("mart") || lower.contains("dmart") -> "Groceries 🛒"
+            
+            lower.contains("pharmacy") || lower.contains("apollo") || lower.contains("hospital") || lower.contains("doctor") || 
+            lower.contains("health") || lower.contains("gym") || lower.contains("medical") -> "Health & Wellness 💊"
+            
+            lower.contains("salary") || lower.contains("stipend") || lower.contains("bonus") || lower.contains("dividend") || 
+            lower.contains("interest") || lower.contains("cashback") -> "Income 💰"
+
             lower.contains("cash") || lower.contains("withdrawal") || lower.contains("atm") -> "Cash 💵"
-            lower.contains("zomato") || lower.contains("swiggy") || lower.contains("food") || lower.contains("eat") || lower.contains("restaurant") || lower.contains("bakery") -> "Food 🍔"
-            lower.contains("amazon") || lower.contains("flipkart") || lower.contains("shop") || lower.contains("blinkit") || lower.contains("zepto") || lower.contains("myntra") || lower.contains("meesho") -> "Shopping 🛍"
-            lower.contains("recharge") || lower.contains("airtel") || lower.contains("jio") || lower.contains("bill") || lower.contains("electricity") || lower.contains("vi ") || lower.contains("broadband") -> "Bills 🧾"
-            lower.contains("uber") || lower.contains("ola") || lower.contains("metro") || lower.contains("travel") || lower.contains("rapido") || lower.contains("train") || lower.contains("irctc") || lower.contains("bus") -> "Travel 🚗"
-            lower.contains("netflix") || lower.contains("spotify") || lower.contains("movie") || lower.contains("pvr") || lower.contains("hotstar") || lower.contains("theatre") || lower.contains("entertainment") -> "Entertainment 🍿"
-            lower.contains("transfer") || lower.contains("upi") || lower.contains("sent to") || lower.contains("phonepe") || lower.contains("gpay") || lower.contains("paytm") || lower.contains("vpa") -> "Transfers 💸"
+            
+            lower.contains("transfer") || lower.contains("upi") || lower.contains("sent to") || lower.contains("phonepe") || 
+            lower.contains("gpay") || lower.contains("paytm") || lower.contains("vpa") || lower.contains("self") -> "Transfers 💸"
+
             else -> "Others 📦"
         }
     }

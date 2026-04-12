@@ -54,7 +54,7 @@ class AuthActivity : AppCompatActivity() {
             val name = binding.etRegName.text.toString()
             val email = binding.etRegEmail.text.toString()
             val password = binding.etRegPassword.text.toString()
-            val income = binding.etRegIncome.text.toString()
+            val budget = binding.etRegBudget.text.toString()
 
             if (name.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
                 val sharedPref = getSharedPreferences("FinTrackPrefs", Context.MODE_PRIVATE)
@@ -62,7 +62,7 @@ class AuthActivity : AppCompatActivity() {
                     putString("user_name", name)
                     putString("user_email", email)
                     putString("user_password_hash", hashPassword(password))
-                    putFloat("monthly_income", income.toFloatOrNull() ?: 0f)
+                    putFloat("budget", budget.toFloatOrNull() ?: 20000f)
                     putBoolean("isLoggedIn", true)
                     apply()
                 }

@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = {}) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = {}, private val onClick: (TransactionEntity) -> Unit = {}) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     private var transactions = listOf<TransactionEntity>()
 
@@ -19,7 +19,7 @@ class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TransactionViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_transaction, parent, false)
-        return TransactionViewHolder(view, onLongClick)
+        return TransactionViewHolder(view, onLongClick, onClick)
     }
 
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
@@ -29,7 +29,7 @@ class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = 
 
     override fun getItemCount() = transactions.size
 
-    class TransactionViewHolder(itemView: View, private val onLongClick: (TransactionEntity) -> Unit) : RecyclerView.ViewHolder(itemView) {
+    class TransactionViewHolder(itemView: View, private val onLongClick: (TransactionEntity) -> Unit, private val onClick: (TransactionEntity) -> Unit) : RecyclerView.ViewHolder(itemView) {
         private val txtMerchant: TextView = itemView.findViewById(R.id.txtMerchant)
         private val txtCategoryName: TextView = itemView.findViewById(R.id.txtCategoryName)
         private val txtDate: TextView = itemView.findViewById(R.id.txtDate)
@@ -37,6 +37,9 @@ class TransactionAdapter(private val onLongClick: (TransactionEntity) -> Unit = 
         private val txtIcon: TextView = itemView.findViewById(R.id.txtCategoryIcon)
 
         fun bind(transaction: TransactionEntity) {
+            itemView.setOnClickListener {
+                onClick(transaction)
+            }
             itemView.setOnLongClickListener {
                 onLongClick(transaction)
                 true

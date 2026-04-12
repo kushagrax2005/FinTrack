@@ -1,143 +1,242 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:background="@color/background">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp"
-        android:text="FinTrack"
-        android:textColor="@color/white"
-        android:textSize="32sp"
-        android:textStyle="bold" />
-
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/transparent"
-        app:tabIndicatorColor="@color/white"
-        app:tabSelectedTextColor="@color/white"
-        app:tabTextColor="#88FFFFFF">
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Login" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Register" />
-    </com.google.android.material.tabs.TabLayout>
-
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="24dp">
+        android:orientation="vertical">
 
-        <!-- Login Section -->
-        <LinearLayout
-            android:id="@+id/loginSection"
+        <!-- Header Section -->
+        <RelativeLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="visible">
+            android:layout_height="250dp"
+            android:background="@drawable/header_gradient"
+            android:padding="24dp">
 
-            <EditText
-                android:id="@+id/etEmail"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:backgroundTint="@color/white"
-                android:hint="Email"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:orientation="vertical">
 
-            <EditText
-                android:id="@+id/etPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="@color/white"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="0.05"
+                    android:text="FinTrack"
+                    android:textColor="@color/white"
+                    android:textSize="40sp"
+                    android:shadowColor="#40000000"
+                    android:shadowDx="2"
+                    android:shadowDy="2"
+                    android:shadowRadius="4" />
 
-            <Button
-                android:id="@+id/btnLogin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:backgroundTint="@color/white"
-                android:text="Login"
-                android:textColor="@color/black" />
-        </LinearLayout>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Manage your finances with AI"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="16sp" />
+            </LinearLayout>
+        </RelativeLayout>
 
-        <!-- Register Section -->
-        <LinearLayout
-            android:id="@+id/registerSection"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:layout_height="match_parent"
+            android:layout_marginTop="-40dp">
 
-            <EditText
-                android:id="@+id/etRegName"
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:backgroundTint="@color/white"
-                android:hint="Full Name"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                android:layout_height="match_parent"
+                android:background="@drawable/rounded_top_bg"
+                android:elevation="12dp">
 
-            <EditText
-                android:id="@+id/etRegEmail"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="@color/white"
-                android:hint="Email"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
-            <EditText
-                android:id="@+id/etRegPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="@color/white"
-                android:hint="Password"
-                android:inputType="textPassword"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tabLayout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@android:color/transparent"
+                        app:tabIndicatorColor="@color/primary"
+                        app:tabSelectedTextColor="@color/primary"
+                        app:tabTextColor="@color/text_secondary"
+                        app:tabIndicatorHeight="3dp"
+                        app:tabRippleColor="@null">
 
-            <EditText
-                android:id="@+id/etRegIncome"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="@color/white"
-                android:hint="Monthly Income"
-                android:inputType="numberDecimal"
-                android:textColor="@color/white"
-                android:textColorHint="#88FFFFFF" />
+                        <com.google.android.material.tabs.TabItem
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Login" />
 
-            <Button
-                android:id="@+id/btnRegister"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:backgroundTint="@color/white"
-                android:text="Register"
-                android:textColor="@color/black" />
-        </LinearLayout>
-    </FrameLayout>
-</LinearLayout>
+                        <com.google.android.material.tabs.TabItem
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Register" />
+                    </com.google.android.material.tabs.TabLayout>
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="4dp"
+                        app:cardBackgroundColor="@color/white">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="24dp">
+
+                            <!-- Login Section -->
+                            <LinearLayout
+                                android:id="@+id/loginSection"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:visibility="visible">
+
+                                <EditText
+                                    android:id="@+id/etEmail"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Email"
+                                    android:inputType="textEmailAddress"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <EditText
+                                    android:id="@+id/etPassword"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="16dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Password"
+                                    android:inputType="textPassword"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <Button
+                                    android:id="@+id/btnLogin"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="32dp"
+                                    android:background="@drawable/button_primary_bg"
+                                    android:text="Login"
+                                    android:textAllCaps="false"
+                                    android:textColor="@color/white"
+                                    android:textSize="18sp"
+                                    android:fontFamily="sans-serif-medium"
+                                    app:backgroundTint="@null" />
+                            </LinearLayout>
+
+                            <!-- Register Section -->
+                            <LinearLayout
+                                android:id="@+id/registerSection"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:visibility="gone">
+
+                                <EditText
+                                    android:id="@+id/etRegName"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Full Name"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <EditText
+                                    android:id="@+id/etRegEmail"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="16dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Email"
+                                    android:inputType="textEmailAddress"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <EditText
+                                    android:id="@+id/etRegPassword"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="16dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Password"
+                                    android:inputType="textPassword"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <EditText
+                                    android:id="@+id/etRegBudget"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="16dp"
+                                    android:background="@drawable/glass_card_bg"
+                                    android:backgroundTint="#F5F5F5"
+                                    android:hint="Monthly Budget"
+                                    android:inputType="numberDecimal"
+                                    android:paddingHorizontal="16dp"
+                                    android:textColor="@color/text_primary"
+                                    android:textColorHint="@color/text_secondary"
+                                    android:textSize="15sp" />
+
+                                <Button
+                                    android:id="@+id/btnRegister"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="56dp"
+                                    android:layout_marginTop="32dp"
+                                    android:background="@drawable/button_primary_bg"
+                                    android:text="Create Account"
+                                    android:textAllCaps="false"
+                                    android:textColor="@color/white"
+                                    android:textSize="18sp"
+                                    android:fontFamily="sans-serif-medium"
+                                    app:backgroundTint="@null" />
+                            </LinearLayout>
+                        </FrameLayout>
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_marginTop="32dp"
+                        android:text="By continuing, you agree to our Terms of Service"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
+        </FrameLayout>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
