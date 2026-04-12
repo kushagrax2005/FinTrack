@@ -42,6 +42,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dashboardView: View
     private lateinit var transactionsView: View
     private lateinit var analyticsView: View
+    private lateinit var rewardsView: View
+
+    private lateinit var rvRewards: RecyclerView
+    private lateinit var rewardAdapter: RewardAdapter
+    private lateinit var txtUserPoints: TextView
+    private lateinit var txtDailyStatus: TextView
 
     private lateinit var barChart: BarChart
     private lateinit var txtTotalIncome: TextView
@@ -94,6 +100,11 @@ class MainActivity : AppCompatActivity() {
         dashboardView = findViewById(R.id.dashboardView)
         transactionsView = findViewById(R.id.transactionsView)
         analyticsView = findViewById(R.id.analyticsView)
+        rewardsView = findViewById(R.id.rewardsView)
+
+        rvRewards = findViewById(R.id.rvRewards)
+        txtUserPoints = findViewById(R.id.txtUserPoints)
+        txtDailyStatus = findViewById(R.id.txtDailyStatus)
 
         barChart = findViewById(R.id.barChart)
         txtTotalIncome = findViewById(R.id.txtTotalIncome)
@@ -166,18 +177,29 @@ class MainActivity : AppCompatActivity() {
                     dashboardView.visibility = View.VISIBLE
                     transactionsView.visibility = View.GONE
                     analyticsView.visibility = View.GONE
+                    rewardsView.visibility = View.GONE
                     true
                 }
                 R.id.nav_transactions -> {
                     dashboardView.visibility = View.GONE
                     transactionsView.visibility = View.VISIBLE
                     analyticsView.visibility = View.GONE
+                    rewardsView.visibility = View.GONE
                     true
                 }
                 R.id.nav_analytics -> {
                     dashboardView.visibility = View.GONE
                     transactionsView.visibility = View.GONE
                     analyticsView.visibility = View.VISIBLE
+                    rewardsView.visibility = View.GONE
+                    true
+                }
+                R.id.nav_rewards -> {
+                    dashboardView.visibility = View.GONE
+                    transactionsView.visibility = View.GONE
+                    analyticsView.visibility = View.GONE
+                    rewardsView.visibility = View.VISIBLE
+                    updateRewardsUI()
                     true
                 }
                 else -> false
@@ -188,8 +210,91 @@ class MainActivity : AppCompatActivity() {
     private fun setupUI() {
         setupMonthSpinner()
         setupRecyclerView()
+        setupRewardsRecyclerView()
         setupPieChart()
         observeTransactions()
+    }
+
+    private fun setupRewardsRecyclerView() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val userPoints = prefs.getInt("user_points", 0)
+        
+        rewardAdapter = RewardAdapter(getAvailableRewards(), userPoints) { reward ->
+            redeemReward(reward)
+        }
+        rvRewards.layoutManager = LinearLayoutManager(this)
+        rvRewards.adapter = rewardAdapter
+    }
+
+    private fun getAvailableRewards(): List<Reward> {
+        val rewards = listOf(
+            Reward("1", "Premium Subscription", "1 Month FinTrack Pro", 1000, "💎", "SUBSCRIPTION"),
+            Reward("2", "Amazon Gift Card", "₹250 Voucher", 2500, "🎁", "GIFT_CARD"),
+            Reward("3", "Zomato Pro", "3 Months Membership", 1500, "🍕", "SUBSCRIPTION"),
+            Reward("4", "Swiggy Money", "₹100 Cashback", 1000, "🟠", "VOUCHER")
+        )
+        return rewards.map { it.copy(cost = it.getDynamicCost(monthlyBudget)) }
+    }
+
+    private fun updateRewardsUI() {
+        lifecycleScope.launch {
+            val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val userPoints = prefs.getInt("user_points", 0)
+            txtUserPoints.text = "⭐ $userPoints pts"
+
+            // Logic to calculate daily points
+            val today = Calendar.getInstance()
+            val startOfDay = today.apply { set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0) }.timeInMillis
+            
+            val transactions = repository.allTransactions.first()
+            val todaySpent = transactions.filter { it.date >= startOfDay && it.isDebit }.sumOf { it.amount }
+            
+            val dailyBudget = monthlyBudget / 30.0
+            val lastAwardedDay = prefs.getLong("last_rewarded_day", 0)
+            
+            val isSameDay = SimpleDateFormat("yyyyMMdd").format(Date(lastAwardedDay)) == 
+                            SimpleDateFormat("yyyyMMdd").format(Date())
+
+            if (!isSameDay && todaySpent > 0) {
+                // FAIR LOGIC: Points = (1 - (Spent/Budget)) * 100
+                // This way, if someone spends 50% of their budget, they get 50 pts
+                // regardless of whether their budget is 1,000 or 100,000.
+                if (todaySpent <= dailyBudget) {
+                    val efficiency = (1.0 - (todaySpent / dailyBudget))
+                    val pointsToGain = (efficiency * 100).toInt().coerceAtLeast(10) // Min 10 pts for staying under
+                    
+                    val newTotal = userPoints + pointsToGain
+                    prefs.edit().apply {
+                        putInt("user_points", newTotal)
+                        putLong("last_rewarded_day", System.currentTimeMillis())
+                        apply()
+                    }
+                    txtUserPoints.text = "⭐ $newTotal pts"
+                    Toast.makeText(this@MainActivity, "Congratulations! You earned $pointsToGain points for saving today!", Toast.LENGTH_LONG).show()
+                }
+            }
+            
+            txtDailyStatus.text = "Daily Budget: ₹%.0f | Today's Spend: ₹%.0f".format(dailyBudget, todaySpent)
+            rewardAdapter.updateRewards(getAvailableRewards())
+        }
+    }
+
+    private fun redeemReward(reward: Reward) {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val userPoints = prefs.getInt("user_points", 0)
+        
+        if (userPoints >= reward.cost) {
+            val newPoints = userPoints - reward.cost
+            prefs.edit().putInt("user_points", newPoints).apply()
+            
+            AlertDialog.Builder(this)
+                .setTitle("Reward Redeemed!")
+                .setMessage("You have successfully redeemed ${reward.title}. Your coupon code will be sent to your registered email.")
+                .setPositiveButton("Awesome", null)
+                .show()
+                
+            updateRewardsUI()
+        }
     }
 
     private fun setupMonthSpinner() {

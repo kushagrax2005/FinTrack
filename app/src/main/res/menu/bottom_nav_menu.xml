@@ -12,4 +12,8 @@
         android:id="@+id/nav_analytics"
         android:title="Analytics"
         android:icon="@android:drawable/ic_menu_sort_by_size"/>
+    <item
+        android:id="@+id/nav_rewards"
+        android:title="Rewards"
+        android:icon="@android:drawable/btn_star_big_on"/>
 </menu>
