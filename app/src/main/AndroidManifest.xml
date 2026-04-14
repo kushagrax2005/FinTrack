@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+    <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
@@ -28,6 +29,11 @@
 
         <activity
             android:name=".AuthActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FinTrack.NoActionBar" />
+
+        <activity
+            android:name=".SetupActivity"
             android:exported="false"
             android:theme="@style/Theme.FinTrack.NoActionBar" />
 

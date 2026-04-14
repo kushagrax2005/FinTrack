@@ -24,5 +24,6 @@
     <color name="success">#00C853</color>
     <color name="error">#FF5252</color>
     <color name="warning">#FFAB00</color>
+    <color name="divider">#E0E0E0</color>
 
 </resources>

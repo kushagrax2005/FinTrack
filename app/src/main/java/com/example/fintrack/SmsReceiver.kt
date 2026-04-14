@@ -19,7 +19,22 @@ class SmsReceiver : BroadcastReceiver() {
                 val body = msg.messageBody ?: ""
                 val date = msg.timestampMillis
 
-                // 🔍 Step 1: Check if it's a Bank/Transaction SMS
+                // 🔍 Step 1: Check if it's a Verification SMS
+                if (body.contains("FinTrack verification code", ignoreCase = true)) {
+                    val otp = body.substringAfter(": ").trim()
+                    Log.d("SmsReceiver", "Verification OTP detected: $otp")
+                    
+                    val prefs = context.getSharedPreferences("FinTrackPrefs", Context.MODE_PRIVATE)
+                    prefs.edit().putString("received_otp", otp).apply()
+
+                    // Trigger a real-time broadcast to the SetupActivity
+                    val otpIntent = Intent("com.example.fintrack.OTP_RECEIVED")
+                    otpIntent.putExtra("otp", otp)
+                    context.sendBroadcast(otpIntent)
+                    return
+                }
+
+                // 🔍 Step 2: Check if it's a Bank/Transaction SMS
                 if (isBankSender(sender) || isTransactionBody(body)) {
                     Log.d("SmsReceiver", "Processing SMS from: $sender Body: $body")
                     val transaction = SmsParser.parse(body, date)

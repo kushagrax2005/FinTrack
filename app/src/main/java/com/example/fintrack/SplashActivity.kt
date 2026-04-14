@@ -13,12 +13,14 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
 
         Handler(Looper.getMainLooper()).postDelayed({
-            // Force login every time as requested by setting isLoggedIn to false on every start
             val sharedPref = getSharedPreferences("FinTrackPrefs", Context.MODE_PRIVATE)
             
-            // If you want it to ALWAYS show login, we route to AuthActivity
-            // But we keep the user data (like budget/name) intact for when they log in.
-            startActivity(Intent(this, AuthActivity::class.java))
+            val isVerified = sharedPref.getBoolean("user_verified", false)
+            if (!isVerified) {
+                startActivity(Intent(this, SetupActivity::class.java))
+            } else {
+                startActivity(Intent(this, AuthActivity::class.java))
+            }
             finish()
         }, 2000)
     }

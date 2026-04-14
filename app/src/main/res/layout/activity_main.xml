@@ -54,6 +54,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/cardMainBalance"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/topBar"
@@ -93,7 +94,7 @@
 
             <!-- Dashboard View -->
             <androidx.core.widget.NestedScrollView
-                android:id="@+id/dashboardView"
+                android:id="@+id/dashboard_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/rounded_top_bg"
@@ -183,6 +184,7 @@
                         android:fontFamily="sans-serif-medium" />
 
                     <androidx.cardview.widget.CardView
+                        android:id="@+id/cardInsights"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -286,7 +288,7 @@
 
             <!-- Transactions List -->
             <LinearLayout
-                android:id="@+id/transactionsView"
+                android:id="@+id/transactions_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/rounded_top_bg"
@@ -345,7 +347,7 @@
 
             <!-- Analytics View -->
             <androidx.core.widget.NestedScrollView
-                android:id="@+id/analyticsView"
+                android:id="@+id/analytics_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/rounded_top_bg"
@@ -500,7 +502,7 @@
 
             <!-- Rewards View -->
             <LinearLayout
-                android:id="@+id/rewardsView"
+                android:id="@+id/rewards_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="@drawable/rounded_top_bg"

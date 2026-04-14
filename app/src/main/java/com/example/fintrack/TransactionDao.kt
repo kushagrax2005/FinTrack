@@ -20,8 +20,8 @@ interface TransactionDao {
     @Query("DELETE FROM transactions")
     suspend fun deleteAll()
 
-    @Query("SELECT * FROM transactions WHERE amount = :amount AND merchant = :merchant AND date BETWEEN :startTime AND :endTime LIMIT 1")
-    suspend fun findDuplicate(amount: Double, merchant: String, startTime: Long, endTime: Long): TransactionEntity?
+    @Query("SELECT * FROM transactions WHERE amount = :amount AND merchant = :merchant AND date BETWEEN :startTime AND :endTime")
+    suspend fun findSimilar(amount: Double, merchant: String, startTime: Long, endTime: Long): List<TransactionEntity>
 }
 
 @Entity(

@@ -9,12 +9,13 @@ import androidx.recyclerview.widget.RecyclerView
 
 class RewardAdapter(
     private var rewards: List<Reward>,
-    private val userPoints: Int,
+    private var userPoints: Int,
     private val onRedeem: (Reward) -> Unit
 ) : RecyclerView.Adapter<RewardAdapter.RewardViewHolder>() {
 
-    fun updateRewards(newRewards: List<Reward>) {
+    fun updateRewards(newRewards: List<Reward>, points: Int) {
         this.rewards = newRewards
+        this.userPoints = points
         notifyDataSetChanged()
     }
 

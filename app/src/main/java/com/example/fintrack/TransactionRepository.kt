@@ -22,9 +22,9 @@ class TransactionRepository(private val transactionDao: TransactionDao) {
     }
 
     suspend fun isDuplicate(amount: Double, merchant: String, date: Long): Boolean {
-        // Look for same amount and merchant within 15 minutes (900,000 ms)
-        val startTime = date - 900_000
-        val endTime = date + 900_000
-        return transactionDao.findDuplicate(amount, merchant, startTime, endTime) != null
+        // Look for same amount and merchant within 5 minutes (300,000 ms)
+        val startTime = date - 300_000
+        val endTime = date + 300_000
+        return transactionDao.findSimilar(amount, merchant, startTime, endTime).isNotEmpty()
     }
 }

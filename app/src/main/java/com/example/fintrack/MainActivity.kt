@@ -1,10 +1,12 @@
 package com.example.fintrack
 
+import android.animation.ValueAnimator
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -68,6 +70,7 @@ class MainActivity : AppCompatActivity() {
     private val PREFS_NAME = "FinTrackPrefs"
 
     private val selectedDate = kotlinx.coroutines.flow.MutableStateFlow(Calendar.getInstance())
+    private var lastSpentAmount = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,9 +80,34 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         
         monthlyBudget = prefs.getFloat("budget", 20000f).toDouble()
-
         val userName = prefs.getString("user_name", "User")
-        Toast.makeText(this, "Welcome back, $userName!", Toast.LENGTH_SHORT).show()
+        
+        // Find Views
+        dashboardView = findViewById(R.id.dashboard_layout)
+        transactionsView = findViewById(R.id.transactions_layout)
+        analyticsView = findViewById(R.id.analytics_layout)
+        rewardsView = findViewById(R.id.rewards_layout)
+        
+        // Initial visibility
+        dashboardView.visibility = View.VISIBLE
+        transactionsView.visibility = View.GONE
+        analyticsView.visibility = View.GONE
+        rewardsView.visibility = View.GONE
+        
+        // Apply Entrance Animations
+        applyEntranceAnimations()
+        
+        if (userName == "admin admin") {
+            Toast.makeText(this, "Welcome, System Administrator!", Toast.LENGTH_LONG).show()
+            prefs.edit().putInt("user_points", 40000).apply()
+        } else {
+            Toast.makeText(this, "Welcome back, $userName!", Toast.LENGTH_SHORT).show()
+            // Initialize random points for new users (20-30 range)
+            if (!prefs.contains("user_points")) {
+                val initialPoints = (20..30).random()
+                prefs.edit().putInt("user_points", initialPoints).apply()
+            }
+        }
 
         // Initialize UI
         totalText = findViewById(R.id.txtTotal)
@@ -90,11 +118,6 @@ class MainActivity : AppCompatActivity() {
         etSearch = findViewById(R.id.etSearch)
         btnSearch = findViewById(R.id.btnSearch)
         rvTransactions = findViewById(R.id.rvTransactions)
-        
-        dashboardView = findViewById(R.id.dashboardView)
-        transactionsView = findViewById(R.id.transactionsView)
-        analyticsView = findViewById(R.id.analyticsView)
-        rewardsView = findViewById(R.id.rewardsView)
 
         rvRewards = findViewById(R.id.rvRewards)
         txtUserPoints = findViewById(R.id.txtUserPoints)
@@ -307,7 +330,20 @@ class MainActivity : AppCompatActivity() {
         val etAmount = view.findViewById<EditText>(R.id.etAmount)
         val spinnerCategory = view.findViewById<Spinner>(R.id.spinnerCategory)
 
-        val categories = arrayOf("Food", "Transport", "Shopping", "Entertainment", "Bills", "Health", "Other")
+        val categories = arrayOf(
+            "Food & Dining 🍔",
+            "Shopping 🛍",
+            "Bills & Utilities 🧾",
+            "Travel & Transport 🚗",
+            "Entertainment 🍿",
+            "Investment & Savings 📈",
+            "Groceries 🛒",
+            "Health & Wellness 💊",
+            "Transfers 💸",
+            "Cash 💵",
+            "Income 💰",
+            "Others 📦"
+        )
         val catAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categories)
         spinnerCategory.adapter = catAdapter
 
@@ -361,7 +397,6 @@ class MainActivity : AppCompatActivity() {
                     it.body.contains(query, ignoreCase = true)
                 }
                 adapter.setTransactions(searchResults)
-                Toast.makeText(this@MainActivity, "Found ${searchResults.size} results", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -375,7 +410,8 @@ class MainActivity : AppCompatActivity() {
         }
         
         val totalSpent = netDebits.sumOf { it.amount }
-        totalText.text = "₹%.2f".format(totalSpent)
+        animateValue(totalText, lastSpentAmount, totalSpent)
+        lastSpentAmount = totalSpent
 
         val categories = netDebits.groupBy { it.category }
             .mapValues { it.value.sumOf { it.amount } }
@@ -454,34 +490,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateAIInsights(transactions: List<TransactionEntity>) {
-        val insights = aiAnalyzer.analyze(transactions, monthlyBudget)
-        aiInsightsContainer.removeAllViews()
-        
-        if (insights.isEmpty()) {
-            txtAiStatus.text = "Sync transactions to get AI insights!"
-        } else {
-            txtAiStatus.text = "FinTrack AI Suggestions:"
-            insights.forEach { insight ->
-                val view = LayoutInflater.from(this).inflate(R.layout.item_ai_insight, aiInsightsContainer, false)
-                val textTitle = view.findViewById<TextView>(R.id.txtInsightTitle)
-                val textDesc = view.findViewById<TextView>(R.id.txtInsightMessage)
-                val textImpact = view.findViewById<TextView>(R.id.txtImpactLabel)
-                val impactIndicator = view.findViewById<View>(R.id.impactIndicator)
-                
-                textTitle.text = "💡 ${insight.title}"
-                textDesc.text = insight.description
-                textImpact.text = insight.impact.uppercase()
-                
-                // Color based on impact
-                val color = when (insight.impact.lowercase()) {
-                    "high" -> android.graphics.Color.parseColor("#FF5252") // Red
-                    "medium" -> android.graphics.Color.parseColor("#FFAB00") // Orange/Amber
-                    else -> android.graphics.Color.parseColor("#00C853") // Green
-                }
-                impactIndicator.setBackgroundColor(color)
-                textImpact.setTextColor(color)
+        lifecycleScope.launch {
+            txtAiStatus.text = "FinTrack AI is analyzing your patterns..."
+            
+            val insights = aiAnalyzer.getAiInsights(transactions, monthlyBudget)
+            aiInsightsContainer.removeAllViews()
+            
+            if (insights.isEmpty()) {
+                txtAiStatus.text = "Sync transactions to get AI insights!"
+            } else {
+                txtAiStatus.text = "FinTrack AI Suggestions:"
+                insights.forEach { insight ->
+                    val view = LayoutInflater.from(this@MainActivity).inflate(R.layout.item_ai_insight, aiInsightsContainer, false)
+                    val textTitle = view.findViewById<TextView>(R.id.txtInsightTitle)
+                    val textDesc = view.findViewById<TextView>(R.id.txtInsightMessage)
+                    val textImpact = view.findViewById<TextView>(R.id.txtImpactLabel)
+                    val impactIndicator = view.findViewById<View>(R.id.impactIndicator)
+                    
+                    textTitle.text = "💡 ${insight.title}"
+                    textDesc.text = insight.description
+                    textImpact.text = insight.impact.uppercase()
+                    
+                    // Color based on impact
+                    val color = when (insight.impact.lowercase()) {
+                        "high" -> android.graphics.Color.parseColor("#FF5252") // Red
+                        "medium" -> android.graphics.Color.parseColor("#FFAB00") // Orange/Amber
+                        else -> android.graphics.Color.parseColor("#00C853") // Green
+                    }
+                    impactIndicator.setBackgroundColor(color)
+                    textImpact.setTextColor(color)
 
-                aiInsightsContainer.addView(view)
+                    aiInsightsContainer.addView(view)
+                }
             }
         }
     }
@@ -607,7 +647,15 @@ class MainActivity : AppCompatActivity() {
     private fun updateRewardsUI() {
         lifecycleScope.launch {
             val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            val userPoints = prefs.getInt("user_points", 0)
+            var userPoints = prefs.getInt("user_points", 0)
+            val userName = prefs.getString("user_name", "User")
+            
+            // Admin override
+            if (userName == "admin admin") {
+                userPoints = 40000
+                prefs.edit().putInt("user_points", 40000).apply()
+            }
+            
             txtUserPoints.text = "⭐ $userPoints pts"
 
             val today = Calendar.getInstance()
@@ -632,17 +680,10 @@ class MainActivity : AppCompatActivity() {
             val isSameDay = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(lastAwardedDay)) == 
                             SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
 
-            if (!isSameDay) {
-                val efficiency = if (dailyBudget > 0) (1.0 - (netTodaySpent / dailyBudget)) else 0.0
-                val pointsToGain = (efficiency * 100).toInt()
-
-                val finalPoints = when {
-                    netTodaySpent == 0.0 -> 100
-                    netTodaySpent > dailyBudget -> 0
-                    else -> pointsToGain.coerceAtLeast(10)
-                }
-                
-                if (finalPoints > 0) {
+            if (!isSameDay && userName != "admin admin") {
+                // Point logic: if more than 0% but less than 75% of daily budget used, give 1 point
+                if (netTodaySpent > 0 && netTodaySpent < (dailyBudget * 0.75)) {
+                    val finalPoints = 1
                     val newTotal = userPoints + finalPoints
                     prefs.edit().apply {
                         putInt("user_points", newTotal)
@@ -650,14 +691,15 @@ class MainActivity : AppCompatActivity() {
                         apply()
                     }
                     txtUserPoints.text = "⭐ $newTotal pts"
-                    Toast.makeText(this@MainActivity, "You earned $finalPoints points today!", Toast.LENGTH_LONG).show()
-                } else if (netTodaySpent > dailyBudget) {
-                     prefs.edit().putLong("last_rewarded_day", System.currentTimeMillis()).apply()
+                    Toast.makeText(this@MainActivity, "Daily efficiency! You earned 1 point.", Toast.LENGTH_SHORT).show()
+                } else if (netTodaySpent >= (dailyBudget * 0.75)) {
+                    // Mark as processed for today even if no points earned to prevent multiple checks
+                    prefs.edit().putLong("last_rewarded_day", System.currentTimeMillis()).apply()
                 }
             }
             
             txtDailyStatus.text = "Daily Budget: ₹%.0f | Net Spend: ₹%.0f".format(dailyBudget, netTodaySpent)
-            rewardAdapter.updateRewards(getAvailableRewards())
+            rewardAdapter.updateRewards(getAvailableRewards(), userPoints)
         }
     }
 
@@ -724,8 +766,33 @@ class MainActivity : AppCompatActivity() {
             txtAiStatus.text = "Analyzing your SMS for transactions..."
             val smsReader = SmsReader(this@MainActivity)
             val transactions = smsReader.readAllTransactions()
-            repository.insertAll(transactions)
-            Toast.makeText(this@MainActivity, "Synced ${transactions.size} transactions!", Toast.LENGTH_SHORT).show()
+            
+            // Deduplicate before inserting
+            // 1. Deduplicate against existing database records
+            // 2. Deduplicate within the SMS list itself (if multiple identical SMS arrived in 5 mins)
+            val uniqueSmsTransactions = mutableListOf<TransactionEntity>()
+            transactions.sortedBy { it.date }.forEach { txn ->
+                val isInternalDuplicate = uniqueSmsTransactions.any { existing ->
+                    existing.amount == txn.amount && 
+                    existing.merchant == txn.merchant && 
+                    Math.abs(existing.date - txn.date) < 300_000
+                }
+                if (!isInternalDuplicate) {
+                    uniqueSmsTransactions.add(txn)
+                }
+            }
+
+            val newTransactions = uniqueSmsTransactions.filter { txn ->
+                !repository.isDuplicate(txn.amount, txn.merchant, txn.date)
+            }
+            
+            if (newTransactions.isNotEmpty()) {
+                repository.insertAll(newTransactions)
+                Toast.makeText(this@MainActivity, "Synced ${newTransactions.size} new transactions!", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "No new transactions found.", Toast.LENGTH_SHORT).show()
+            }
+            txtAiStatus.text = "Dashboard updated"
         }
     }
 
@@ -734,5 +801,28 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == 101 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             syncSmsTransactions()
         }
+    }
+
+    private fun applyEntranceAnimations() {
+        val fadeIn = AnimationUtils.loadAnimation(this, android.R.anim.fade_in)
+        fadeIn.duration = 1000
+        
+        val slideUp = AnimationUtils.loadAnimation(this, R.anim.slide_up_fade)
+        
+        // Animate key components
+        findViewById<View>(R.id.cardMainBalance).startAnimation(slideUp)
+        findViewById<View>(R.id.cardBudget).startAnimation(slideUp)
+        findViewById<View>(R.id.cardInsights).startAnimation(slideUp)
+        findViewById<View>(R.id.pieChart).startAnimation(fadeIn)
+    }
+
+    private fun animateValue(textView: TextView, start: Double, end: Double) {
+        val animator = ValueAnimator.ofFloat(start.toFloat(), end.toFloat())
+        animator.duration = 1500
+        animator.addUpdateListener { animation ->
+            val value = animation.animatedValue as Float
+            textView.text = "₹%.2f".format(value)
+        }
+        animator.start()
     }
 }

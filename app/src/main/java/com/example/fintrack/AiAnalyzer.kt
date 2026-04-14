@@ -9,7 +9,7 @@ import java.util.*
 class AiAnalyzer {
 
     // IMPORTANT: Replace with your actual API key from https://aistudio.google.com/
-    private val apiKey = "AIzaSyD_p-14kGUFGmzrHuiIc84Me5Kw01Jz8s4"
+    private val apiKey = "AIzaSyCBynKAR1MWtv2wopn4PKIwh1eaBj81k7I"
     
     private val model = GenerativeModel(
         modelName = "gemini-1.5-flash",
@@ -396,26 +396,35 @@ class AiAnalyzer {
             .mapValues { it.value.sumOf { t -> t.amount } }
             .entries.sortedByDescending { it.value }
             .joinToString { "${it.key}: ₹${it.value.toInt()}" }
+
+        val topMerchants = debits.groupBy { it.merchant }
+            .mapValues { it.value.sumOf { it.amount } }
+            .entries.sortedByDescending { it.value }
+            .take(8)
+            .joinToString { "${it.key} (₹${it.value.toInt()})" }
         
         val day = now.get(Calendar.DAY_OF_MONTH)
 
         return """
-            You are "FinTrack AI", a financial coach.
-            Context for CURRENT MONTH:
-            - Budget: ₹$monthlyBudget, Spent: ₹$totalSpent (Day $day)
-            - Categories: $categoryData
+            You are "FinTrack AI", a professional and witty financial coach. 
+            Analyze the user's spending data for the CURRENT MONTH and provide ultra-personalized insights.
             
-            Task: Provide 5 DIVERSE and ACTIONABLE insights. 
-            Include: 
-            1. Current month projection (if spending is high).
-            2. Comparison with previous patterns (if data suggests).
-            3. Identification of "leakage" (small frequent spends).
-            4. Encouragement for good habits.
-            5. A "Fun Fact" about their spending.
+            Context for CURRENT MONTH:
+            - Monthly Budget: ₹$monthlyBudget
+            - Total Spent So Far: ₹$totalSpent (Day $day of the month)
+            - Spending by Category: $categoryData
+            - Top Merchants/Spends: $topMerchants
+            
+            Task: Provide 3-5 DIVERSE, DATA-DRIVEN and ACTIONABLE insights. 
+            Guidelines:
+            - Be specific. Instead of "Save on food", say "You spent ₹${(debits.filter { it.category == "Food & Dining" }.sumOf { it.amount }).toInt()} on Food & Dining. At this rate, you'll hit ₹X by month-end."
+            - Identify "Micro-leaks": Frequent small transactions that add up.
+            - Compare spending to the budget. If they are doing well, praise them. If not, give a gentle warning.
+            - Add a "Fun Fact" or "Witty Observation" about their lifestyle based on these merchants.
 
-            Format:
-            TITLE: [3-5 words]
-            MESSAGE: [1-2 sentences]
+            Format EACH insight EXACTLY like this (use --- as a separator):
+            TITLE: [Short Catchy Title]
+            MESSAGE: [1-2 sentences of deep analysis and advice]
             IMPACT: [High/Medium/Low]
             ---
         """.trimIndent()
@@ -433,19 +442,20 @@ class AiAnalyzer {
             var impact = "Medium"
             
             block.trim().lines().forEach { line ->
+                val cleanedLine = line.trim()
                 when {
-                    line.startsWith("TITLE:", ignoreCase = true) -> title = line.substringAfter(":").trim()
-                    line.startsWith("MESSAGE:", ignoreCase = true) -> message = line.substringAfter(":").trim()
-                    line.startsWith("DESCRIPTION:", ignoreCase = true) -> message = line.substringAfter(":").trim()
-                    line.startsWith("IMPACT:", ignoreCase = true) -> impact = line.substringAfter(":").trim()
+                    cleanedLine.startsWith("TITLE:", ignoreCase = true) -> title = cleanedLine.substringAfter(":").trim()
+                    cleanedLine.startsWith("MESSAGE:", ignoreCase = true) -> message = cleanedLine.substringAfter(":").trim()
+                    cleanedLine.startsWith("DESCRIPTION:", ignoreCase = true) -> message = cleanedLine.substringAfter(":").trim()
+                    cleanedLine.startsWith("IMPACT:", ignoreCase = true) -> impact = cleanedLine.substringAfter(":").trim()
                 }
             }
             
             if (title.isNotEmpty() && message.isNotEmpty()) {
-                insights.add(Insight(title.removeSurrounding("[", "]"), message, impact.removeSurrounding("[", "]")))
+                insights.add(Insight(title.removeSurrounding("[", "]").removeSurrounding("\""), message, impact.removeSurrounding("[", "]").removeSurrounding("\"")))
             }
         }
-        return insights.take(3)
+        return if (insights.isEmpty()) emptyList() else insights
     }
 
     private fun analyzeLocally(transactions: List<TransactionEntity>, monthlyBudget: Double): List<Insight> = analyze(transactions, monthlyBudget)
