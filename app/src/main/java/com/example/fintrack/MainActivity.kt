@@ -350,28 +350,50 @@ class MainActivity : AppCompatActivity() {
         val catAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categories)
         spinnerCategory.adapter = catAdapter
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Add Manual Expense")
             .setView(view)
-            .setPositiveButton("Save") { _, _ ->
-                val merchant = etMerchant.text.toString()
-                val amount = etAmount.text.toString().toDoubleOrNull() ?: 0.0
-                val category = spinnerCategory.selectedItem.toString()
-                
-                if (merchant.isNotEmpty() && amount > 0) {
-                    val transaction = TransactionEntity(
-                        merchant = merchant,
-                        amount = amount,
-                        date = System.currentTimeMillis(),
-                        category = category,
-                        body = "Manual: $merchant",
-                        isDebit = true
-                    )
-                    lifecycleScope.launch { repository.insert(transaction) }
-                }
-            }
+            .setPositiveButton("Save", null)
             .setNegativeButton("Cancel", null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val merchant = etMerchant.text.toString().trim()
+            val amountStr = etAmount.text.toString().trim()
+            val amount = amountStr.toDoubleOrNull() ?: 0.0
+            val category = spinnerCategory.selectedItem.toString()
+
+            if (merchant.isEmpty()) {
+                etMerchant.error = "Merchant name cannot be empty"
+                return@setOnClickListener
+            }
+
+            if (amountStr.isEmpty()) {
+                etAmount.error = "Amount is required"
+                return@setOnClickListener
+            }
+
+            if (amount <= 0) {
+                etAmount.error = "Amount must be greater than zero"
+                return@setOnClickListener
+            }
+
+            lifecycleScope.launch {
+                val transaction = TransactionEntity(
+                    merchant = merchant,
+                    amount = amount,
+                    date = System.currentTimeMillis(),
+                    category = category,
+                    body = "Manual: $merchant",
+                    isDebit = !category.contains("Income")
+                )
+                repository.insert(transaction)
+                dialog.dismiss()
+                Toast.makeText(this@MainActivity, "Transaction added!", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun observeTransactions() {
@@ -466,30 +488,46 @@ class MainActivity : AppCompatActivity() {
         etAmount.hint = "Enter Budget (e.g. 25000)"
         etAmount.setText(monthlyBudget.toString())
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Edit Monthly Budget")
             .setView(view)
-            .setPositiveButton("Save") { _, _ ->
-                val newValue = etAmount.text.toString().toDoubleOrNull()
-                if (newValue != null && newValue > 0) {
-                    monthlyBudget = newValue
-                    getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putFloat("budget", newValue.toFloat()).apply()
-                    // Trigger UI refresh
-                    lifecycleScope.launch {
-                        val transactions = repository.allTransactions.first()
-                        val calendar = selectedDate.value
-                        val filtered = transactions.filter {
-                            val transCal = Calendar.getInstance().apply { timeInMillis = it.date }
-                            transCal.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
-                            transCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR)
-                        }
-                        updateDashboardUI(filtered)
-                        updateRewardsUI() // Update rewards as cost depends on budget
-                    }
-                }
-            }
+            .setPositiveButton("Save", null)
             .setNegativeButton("Cancel", null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val amountStr = etAmount.text.toString().trim()
+            val newValue = amountStr.toDoubleOrNull() ?: 0.0
+
+            if (amountStr.isEmpty()) {
+                etAmount.error = "Budget is required"
+                return@setOnClickListener
+            }
+
+            if (newValue <= 0) {
+                etAmount.error = "Budget must be greater than zero"
+                return@setOnClickListener
+            }
+
+            monthlyBudget = newValue
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit().putFloat("budget", newValue.toFloat()).apply()
+            
+            lifecycleScope.launch {
+                val transactions = repository.allTransactions.first()
+                val calendar = selectedDate.value
+                val filtered = transactions.filter {
+                    val transCal = Calendar.getInstance().apply { timeInMillis = it.date }
+                    transCal.get(Calendar.MONTH) == calendar.get(Calendar.MONTH) &&
+                    transCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR)
+                }
+                updateDashboardUI(filtered)
+                updateRewardsUI()
+                dialog.dismiss()
+                Toast.makeText(this@MainActivity, "Budget updated!", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun updateAIInsights(transactions: List<TransactionEntity>) {

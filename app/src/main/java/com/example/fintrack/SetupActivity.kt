@@ -52,15 +52,44 @@ class SetupActivity : AppCompatActivity() {
 
         binding.btnNextName.setOnClickListener {
             val first = binding.etFirstName.text.toString().trim()
+            val middle = binding.etMiddleName?.text?.toString()?.trim() ?: ""
             val last = binding.etLastName.text.toString().trim()
 
-            if (first.all { it.isLetter() } && last.all { it.isLetter() } && first.isNotEmpty() && last.isNotEmpty()) {
-                binding.txtErrorName.visibility = View.GONE
-                binding.layoutStepName.visibility = View.GONE
-                binding.layoutStepAge.visibility = View.VISIBLE
+            var hasError = false
+
+            if (first.isEmpty()) {
+                binding.tilFirstName.error = "First name is necessary"
+                hasError = true
+            } else if (first.contains(" ")) {
+                binding.tilFirstName.error = "Name should not contain spaces"
+                hasError = true
             } else {
-                binding.txtErrorName.visibility = View.VISIBLE
+                binding.tilFirstName.error = null
             }
+
+            if (middle.isNotEmpty() && middle.contains(" ")) {
+                binding.tilMiddleName.error = "Name should not contain spaces"
+                hasError = true
+            } else {
+                binding.tilMiddleName.error = null
+            }
+
+            if (last.isNotEmpty() && last.contains(" ")) {
+                binding.tilLastName.error = "Name should not contain spaces"
+                hasError = true
+            } else {
+                binding.tilLastName.error = null
+            }
+
+            if (hasError) return@setOnClickListener
+
+            // Check if admin
+            if (first.lowercase() == "admin" && last.lowercase() == "admin") {
+                // We still go through the flow, but we know it's admin
+            }
+
+            binding.layoutStepName.visibility = View.GONE
+            binding.layoutStepAge.visibility = View.VISIBLE
         }
 
         binding.btnNextAge.setOnClickListener {
@@ -220,8 +249,9 @@ class SetupActivity : AppCompatActivity() {
 
     private fun listenForIncomingSms(expectedOtp: String) {
         lifecycleScope.launch {
-            // Still have a timeout for the UI status, but logic is handled by Broadcast
+            // 30 seconds timeout (60 * 500ms)
             repeat(60) {
+                if (binding.etOtp.text?.isNotEmpty() == true) return@launch
                 delay(500)
             }
             if (binding.etOtp.text?.isEmpty() == true) {
