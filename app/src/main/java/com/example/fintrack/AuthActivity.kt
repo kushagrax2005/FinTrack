@@ -46,7 +46,7 @@ class AuthActivity : AppCompatActivity() {
         promptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("FinTrack Security")
             .setSubtitle("Log in using your biometric credential")
-            .setNegativeButtonText("Use Account Password")
+            .setNegativeButtonText("Cancel")
             .build()
 
         // Hide UI elements to keep it clean, just show biometric

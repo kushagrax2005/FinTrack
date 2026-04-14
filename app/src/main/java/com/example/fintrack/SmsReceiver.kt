@@ -55,7 +55,7 @@ class SmsReceiver : BroadcastReceiver() {
                                 isDebit = transaction.isDebit
                             )
                             
-                            // 🛑 PREVENT DUPLICATE ENTRIES: Check if same amount and merchant exists within 15 mins
+                            // 🛑 PREVENT DUPLICATE ENTRIES: Check if same amount and merchant exists within 10 seconds
                             if (!repository.isDuplicate(entity.amount, entity.merchant, entity.date)) {
                                 repository.insert(entity)
                                 NotificationHelper.showNotification(context, transaction.amount, transaction.merchant)
