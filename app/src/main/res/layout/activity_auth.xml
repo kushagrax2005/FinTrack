@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header Section -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/header_gradient"
+            android:padding="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/imgLogo"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:src="@mipmap/ic_launcher_round"
+                    android:layout_marginBottom="24dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="0.05"
+                    android:text="FinTrack"
+                    android:textColor="@color/white"
+                    android:textSize="48sp"
+                    android:shadowColor="#40000000"
+                    android:shadowDx="2"
+                    android:shadowDy="2"
+                    android:shadowRadius="4" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="Secure Financial Management"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="18sp" />
+
+                <TextView
+                    android:id="@+id/txtStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="48dp"
+                    android:text="Tap to Authenticate"
+                    android:textColor="@color/white"
+                    android:textSize="16sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetryBiometric"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="64dp"
+                    android:layout_marginTop="32dp"
+                    android:paddingHorizontal="32dp"
+                    android:text="Unlock with Fingerprint"
+                    android:textColor="@color/primary"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-black"
+                    app:cornerRadius="32dp"
+                    app:icon="@drawable/ic_fingerprint"
+                    app:iconPadding="12dp"
+                    app:iconSize="28dp"
+                    app:iconTint="@color/primary"
+                    app:backgroundTint="@color/white" />
+
+            </LinearLayout>
+
+            <!-- Hidden fields to avoid breaking ViewBinding if still referenced -->
+            <View android:id="@+id/tabLayout" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/loginSection" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <View android:id="@+id/registerSection" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <EditText android:id="@+id/etEmail" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <EditText android:id="@+id/etPassword" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+            <Button android:id="@+id/btnLogin" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+
+        </RelativeLayout>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

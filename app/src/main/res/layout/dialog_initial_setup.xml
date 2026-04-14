@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/txtSetupTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to FinTrack!"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:layout_marginBottom="24dp"/>
+
+    <!-- Step 1: Name -->
+    <LinearLayout
+        android:id="@+id/layoutStepName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="visible">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="What is your name?"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etFirstName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="First Name"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="8dp"/>
+
+        <EditText
+            android:id="@+id/etLastName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Last Name"
+            android:inputType="textPersonName"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:id="@+id/txtErrorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Only alphabets are required."
+            android:textColor="@color/error"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btnNextName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Next"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+
+    <!-- Step 2: Age -->
+    <LinearLayout
+        android:id="@+id/layoutStepAge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="What is your age?"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etAge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Age"
+            android:inputType="number"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/btnNextAge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Next"/>
+    </LinearLayout>
+
+    <!-- Step 3: Phone Verification -->
+    <LinearLayout
+        android:id="@+id/layoutStepPhone"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Verify your phone number"
+            android:textSize="16sp"
+            android:layout_marginBottom="12dp"/>
+
+        <EditText
+            android:id="@+id/etPhone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Phone Number"
+            android:inputType="phone"
+            android:layout_marginBottom="16dp"/>
+
+        <ProgressBar
+            android:id="@+id/pbVerification"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/txtVerificationStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sending verification SMS..."
+            android:textSize="14sp"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="center"/>
+
+        <Button
+            android:id="@+id/btnVerify"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Verify &amp; Start"/>
+    </LinearLayout>
+
+</LinearLayout>
