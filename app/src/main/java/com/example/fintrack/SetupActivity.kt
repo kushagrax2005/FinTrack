@@ -54,11 +54,6 @@ class SetupActivity : AppCompatActivity() {
             val first = binding.etFirstName.text.toString().trim()
             val last = binding.etLastName.text.toString().trim()
 
-            if (first.lowercase() == "admin" && last.lowercase() == "admin") {
-                completeVerification("0000000000") // Skip everything for admin
-                return@setOnClickListener
-            }
-
             if (first.all { it.isLetter() } && last.all { it.isLetter() } && first.isNotEmpty() && last.isNotEmpty()) {
                 binding.txtErrorName.visibility = View.GONE
                 binding.layoutStepName.visibility = View.GONE
@@ -238,9 +233,11 @@ class SetupActivity : AppCompatActivity() {
 
     private fun completeVerification(phone: String) {
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val age = binding.etAge.text.toString().toIntOrNull() ?: 25 // Default age for admin/fallback
+        
         prefs.edit()
             .putString("user_name", "${binding.etFirstName.text} ${binding.etLastName.text}")
-            .putInt("user_age", binding.etAge.text.toString().toInt())
+            .putInt("user_age", age)
             .putString("user_phone", phone)
             .putBoolean("user_verified", true)
             .apply()

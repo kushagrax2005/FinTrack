@@ -99,7 +99,10 @@ class MainActivity : AppCompatActivity() {
         
         if (userName == "admin admin") {
             Toast.makeText(this, "Welcome, System Administrator!", Toast.LENGTH_LONG).show()
-            prefs.edit().putInt("user_points", 40000).apply()
+            // Set 40000 points if not already initialized
+            if (!prefs.contains("user_points")) {
+                prefs.edit().putInt("user_points", 40000).apply()
+            }
         } else {
             Toast.makeText(this, "Welcome back, $userName!", Toast.LENGTH_SHORT).show()
             // Initialize random points for new users (20-30 range)
@@ -647,14 +650,8 @@ class MainActivity : AppCompatActivity() {
     private fun updateRewardsUI() {
         lifecycleScope.launch {
             val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            var userPoints = prefs.getInt("user_points", 0)
+            val userPoints = prefs.getInt("user_points", 0)
             val userName = prefs.getString("user_name", "User")
-            
-            // Admin override
-            if (userName == "admin admin") {
-                userPoints = 40000
-                prefs.edit().putInt("user_points", 40000).apply()
-            }
             
             txtUserPoints.text = "⭐ $userPoints pts"
 
@@ -737,19 +734,46 @@ class MainActivity : AppCompatActivity() {
     private fun redeemReward(reward: Reward) {
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val userPoints = prefs.getInt("user_points", 0)
-        
+        val userPhone = prefs.getString("user_phone", "")
+
         if (userPoints >= reward.cost) {
             val newPoints = userPoints - reward.cost
             prefs.edit().putInt("user_points", newPoints).apply()
             
+            val couponCode = generateCouponCode()
+            val message = "Congratulations! You've redeemed ${reward.title}. Your coupon code is: $couponCode. Enjoy your reward!"
+            
+            if (userPhone!!.isNotEmpty()) {
+                sendSms(userPhone, message)
+            }
+
             AlertDialog.Builder(this)
                 .setTitle("Reward Redeemed!")
-                .setMessage("You have successfully redeemed ${reward.title}. Your coupon code will be sent to your registered email.")
+                .setMessage("You have successfully redeemed ${reward.title}. Your coupon code $couponCode has been sent to your phone.")
                 .setPositiveButton("Awesome", null)
                 .show()
             updateRewardsUI()
         } else {
             Toast.makeText(this, "Not enough points!", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun generateCouponCode(): String {
+        val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return (1..16).map { chars.random() }.joinToString("")
+    }
+
+    private fun sendSms(phoneNumber: String, message: String) {
+        try {
+            val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                this.getSystemService(android.telephony.SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                android.telephony.SmsManager.getDefault()
+            }
+            smsManager.sendTextMessage(phoneNumber, null, message, null, null)
+        } catch (e: Exception) {
+            Toast.makeText(this, "SMS failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
